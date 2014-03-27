@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ehcache>
+
+	<diskStore path="java.io.tmpdir/hibernate/hibernate-cache" />
+	<!-- maxElementsInMemory缓存对象的最大数目1000  eternal设置是否永远不过期 timeToIdleSeconds对象处于空闲状态的最多秒数 timeToLiveSeconds对象处于缓存状态的最多秒数-->
+	<defaultCache maxElementsInMemory="10000" overflowToDisk="true"
+		eternal="false" memoryStoreEvictionPolicy="LRU"
+		diskExpiryThreadIntervalSeconds="600" timeToIdleSeconds="3600"
+		timeToLiveSeconds="100000" diskPersistent="false" />
+	<cache name="org.hibernate.cache.UpdateTimestampsCache"
+		maxElementsInMemory="5000" eternal="true" overflowToDisk="true" />
+	<cache name="org.hibernate.cache.StandardQueryCache"
+		maxElementsInMemory="10000" eternal="false" timeToIdleSeconds="300"
+		timeToLiveSeconds="4200" overflowToDisk="true" />
+	
+	<!-- security objects setting. -->
+	<cache name="com.travelsky.app.persistence.User" maxElementsInMemory="1000"
+		overflowToDisk="false" eternal="true">
+	</cache>
+	<cache name="com.travelsky.app.persistence.User.roles"
+		maxElementsInMemory="1000" overflowToDisk="false" eternal="true">
+	</cache>
+	<cache name="com.travelsky.app.persistence.Role" maxElementsInMemory="1000"
+		overflowToDisk="false" eternal="true">
+	</cache>
+	<cache name="com.travelsky.app.persistence.Role.resources"
+		maxElementsInMemory="1000" overflowToDisk="false" eternal="true">
+	</cache>
+	<cache name="com.travelsky.app.persistence.Resource"
+		maxElementsInMemory="1000" overflowToDisk="false" eternal="true">
+	</cache>
+	<cache name="com.travelsky.app.persistence.Resource.roles"
+		maxElementsInMemory="1000" overflowToDisk="false" eternal="true">
+	</cache>
+</ehcache>

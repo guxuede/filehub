@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>  
+<beans:beans xmlns="http://www.springframework.org/schema/security"  
+    xmlns:beans="http://www.springframework.org/schema/beans"  
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"  
+    xmlns:sec="http://www.springframework.org/schema/security"
+    
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd  
+                        http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.2.xsd">  
+   
+   <!-- 设置访问受限跳转登录页面功能,本来用注解配置的,写此仅为了使loginFormUrl可配置化 -->
+    <beans:bean id="restLoginUrlAuthenticationEntryPoint" class="com.guxuede.gdxFramework.security.RestLoginUrlAuthenticationEntryPoint">
+        <beans:constructor-arg name="loginFormUrl" value="/login.jsp" />
+    </beans:bean>
+   <!-- 设置登录错误跳转页面的功能,本来用注解配置的,写此仅为了使loginFormUrl可配置化 -->
+    <beans:bean id="restAuthenticationFailureHandler" class="com.guxuede.gdxFramework.security.RestAuthenticationFailureHandler">
+        <beans:constructor-arg name="defaultFailureUrl" value="/login.jsp?error=true" />
+    </beans:bean>
+   <!-- 设置登录成功跳转页面的功能,本来用注解配置的,写此仅为了使defaultTargetUrl可配置化 -->
+    <beans:bean id="restAuthenticationSuccessHandler" class="com.guxuede.gdxFramework.security.RestAuthenticationSuccessHandler">
+        <beans:constructor-arg name="defaultTargetUrl" value="/home" />
+    </beans:bean>
+    
+     <beans:bean class="com.guxuede.gdxFramework.security.RestInvalidSessionStrategy">
+    </beans:bean>
+   
+	<!-- 支持 TAGLIB 的 sec:authorize access Spring-EL expression -->
+	<beans:bean id="webexpressionHandler" class="org.springframework.security.web.access.expression.DefaultWebSecurityExpressionHandler" />
+	
+    <!-- 支持 TAGLIB 的 sec:authorize url -->
+    <beans:bean id="webInvocationPrivilegeEvaluator" class="org.springframework.security.web.access.DefaultWebInvocationPrivilegeEvaluator">
+    	<beans:constructor-arg ref="filterSecurityInterceptor" />
+	</beans:bean>
+	
+	<!-- 以下资源不拦截 -->
+    <sec:http pattern="/resources/**" security="none"/>
+    <sec:http pattern="/favicon.ico" security="none"/>
+    <sec:http pattern="/login.jsp*"  security="none"/>
+    <sec:http pattern="/accessDenied.jsp"  security="none"/>
+    <sec:http pattern="/sessionTimeout.jsp"  security="none"/>
+    
+   <!-- 
+   		sec:http :通过一种链式拦截器,共同组成了security的功能,sec:form-login 指定登陆表单功能,sec:logout 提供登出功能等,每一个标签都是一个功能过滤器
+    -->
+   <sec:http entry-point-ref="restLoginUrlAuthenticationEntryPoint" authentication-manager-ref="">  
+	<!-- 由于覆盖原因restAuthenticationSuccessHandler使default-target-url无效,
+		restAuthenticationFailureHandler使authentication-failure-url无效
+		restLoginUrlAuthenticationEntryPoint使login-page无效
+	-->
+     <sec:form-login 
+     	default-target-url='/home' 
+     	always-use-default-target="false"
+     	authentication-failure-url='/login.jsp?error=true'
+     	login-page='/login.jsp' 
+     	authentication-success-handler-ref="restAuthenticationSuccessHandler"
+     	authentication-failure-handler-ref="restAuthenticationFailureHandler"
+     	
+     /> 
+     <sec:access-denied-handler ref="restAccessDeniedHandler" />
+     <sec:logout success-handler-ref="restLogoutSuccessHandler" />  
+     <sec:expression-handler ref="webexpressionHandler"/><!-- 此处可以省略,spring自动查找 -->
+     
+     <!-- TODO hook session 可告知session失效功能 SessionManagementFilter 
+     <sec:session-management session-authentication-strategy-ref="restSessionAuthenticationStrategy" invalid-session-url="/sessionTimeout.jsp" >
+     </sec:session-management>
+      -->
+      
+     <sec:remember-me key="GDX_COOKIES_REMEMBERME"/>  
+     
+     <sec:anonymous username="guest" granted-authority="ROLE_GUEST" />
+   
+     <sec:custom-filter before="FILTER_SECURITY_INTERCEPTOR" ref="filterSecurityInterceptor" />
+   	 <!-- 
+   		默认的拦截(FILTER_SECURITY_INTERCEPTOR) 可拦截指定url,配置该其所需的权限,但是我们使用了sec:custom-filter且优先级大于此INTERCEPTOR,所以这里的拦截器没什么大作用了,但当sec:custom-filter没有拦截的URL,这仍然可以使用
+     <sec:intercept-url pattern='/home*' access='ROLE_USER,ROLE_ADMIN' />  
+     <sec:intercept-url pattern='/admin*' access='ROLE_ADMIN' />  
+     -->
+   </sec:http>  
+   
+   
+	<beans:bean id="filterSecurityInterceptor" class="org.springframework.security.web.access.intercept.FilterSecurityInterceptor">
+	  <beans:property name="accessDecisionManager" ref="accessDecisionManager"/>
+	  <beans:property name="authenticationManager" ref="authenticationManager"/>
+	  <beans:property name="securityMetadataSource" ref="securityMetadataSource">
+	  	<!-- 
+		  <sec:filter-security-metadata-source lowercase-comparisons="true" request-matcher="ant" use-expressions="true">
+		    <sec:intercept-url pattern='/home*' access='ROLE_USER'/>
+		    <sec:intercept-url pattern="/admin*" access="ROLE_ADMIN"/>
+		    <sec:intercept-url pattern="/app/messageDelete*" access="ROLE_ADMIN"/>
+		    <sec:intercept-url pattern="/app/*" access="ROLE_USER"/>
+		  </sec:filter-security-metadata-source>
+		-->
+	  </beans:property>
+   </beans:bean>
+   
+   <!-- 
+   		权限管理器.主要功能:用户登录,判断密码,得到用户所持权限
+   		可灵活配置3种user-service.使得可以从配置文件,jdbc,或者自己使用用代码来查询用户
+    -->
+   <sec:authentication-manager alias="authenticationManager">  
+     <sec:authentication-provider user-service-ref="userDetailServiceImpl">  
+     <!-- 
+       	<password-encoder ref="passwordEncoder">
+  			<salt-source user-property="username" />
+  		</password-encoder>
+  		 -->
+    <!--  
+       <user-service>
+         <user name='admin' password='secret' authorities='ROLE_ADMIN,ROLE_USER' />
+         <user name='user1' password='1111' authorities='ROLE_USER' />
+      </user-service>
+  	 --> 
+       <!--  
+       <jdbc-user-service data-source-ref='dataSource'  
+           users-by-username-query='select username,password, 'true' as enabled from USER_DETAILS where username=?'  
+           authorities-by-username-query='select USER_DETAILS.username , USER_AUTH.AUTHORITY as authorities from USER_DETAILS,USER_AUTH  
+            where USER_DETAILS.username = ? AND USER_DETAILS.username=USER_AUTH.USERNAME '/>  
+             --> 
+     </sec:authentication-provider>  
+   </sec:authentication-manager> 
+   <!-- 
+   		对于处理rest请求,还有一下几个问题需要解决
+   			1.session 超时,security 跳转,rest需要介入,提示需要重新登录,但没有发现入口
+    -->
+</beans:beans>

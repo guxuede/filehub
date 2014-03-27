@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx" 
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:p="http://www.springframework.org/schema/p" 
+	xmlns:cache="http://www.springframework.org/schema/cache"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" 
+
+	xsi:schemaLocation="
+                    http://www.springframework.org/schema/beans
+                    http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+                    http://www.springframework.org/schema/tx 
+                    http://www.springframework.org/schema/tx/spring-tx-3.1.xsd
+                    http://www.springframework.org/schema/aop 
+                    http://www.springframework.org/schema/aop/spring-aop-3.1.xsd
+                    http://www.springframework.org/schema/mvc 
+                    http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd    
+                    http://www.springframework.org/schema/context      
+                    http://www.springframework.org/schema/context/spring-context-3.1.xsd
+                    http://www.springframework.org/schema/cache 
+                    http://www.springframework.org/schema/cache/spring-cache-3.1.xsd">
+
+
+	<!-- 启用缓存注解功能 -->
+	<cache:annotation-driven cache-manager="cacheManager" />
+	<!-- 声明cacheManager spring自己的换管理器，这里定义了两个缓存位置名称 ，既注解中的value ,没有找到原来的ecahce实现-->  
+	<bean id="cacheManager" class="org.springframework.cache.concurrent.ConcurrentMapCacheManager"/>  
+	
+	<!-- 提供参数绑定时的参数转换(自定以这个时,注解@DateTimeFormat就无法使用?) -->
+	<bean id="conversionService" class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
+	    <property name="registerDefaultFormatters" value="false"/>
+	    <property name="formatterRegistrars">
+	       <set>
+				<bean class="com.guxuede.gdxFramework.util.support.DefaultFormattersRegistrar">
+					<property name="dateFormatter">
+						<bean class="com.guxuede.gdxFramework.util.support.DateFormatter">
+							<property name="pattern" value="YYYY/MMM-DD"/>
+							<property name="locale" value="zh"/>
+						</bean>
+					</property>
+				</bean>
+	       </set>
+	    </property>
+	</bean>
+	
+	<!-- 以下 validator  ConversionService 在使用 mvc:annotation-driven 会 自动注册-->
+	<bean id="validator" class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean">
+	        <property name="providerClass"  value="org.hibernate.validator.HibernateValidator"/>
+	        <!-- 如果不加默认到 使用classpath下的 ValidationMessages.properties -->
+	        <property name="validationMessageSource" ref="messageSource"/>
+	</bean>
+	
+	<!-- 配置应用所有用到的json转换 -->
+	<bean id="objectMapper" class="com.guxuede.gdxFramework.util.support.ObjectMapper">
+		<property name="dateFormat">
+			<bean class="java.text.SimpleDateFormat">
+				<constructor-arg value="YYYY-MM-DD"/>
+			</bean>
+		</property>
+	</bean>
+
+	<bean id="dozerBeanMapper" class="org.dozer.DozerBeanMapper">
+		  <property name="mappingFiles">
+		    <list>
+		      <value>dozer_dto.xml</value>
+		    </list>
+		  </property>
+		  
+		<!--  <property name="mappingFiles" value="classpath*:dozer/**/dozer_*.xml" /> -->
+	</bean>
+</beans>

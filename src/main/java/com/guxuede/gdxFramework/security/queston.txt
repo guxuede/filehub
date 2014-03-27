@@ -1,0 +1,11 @@
+		访问资源			需要权限资源?			结果				分析
+[GUEST]	role/			NONE					正常访问			正常合理
+[GUEST]	role/.json		NONE					正常访问			正常合理
+
+[GUEST]	resource/		ROLE_LEADER				LOGIN PAGE		正常 没有权限访问
+[GUEST]	resource/.json	ROLE_LEADER				LOGIN PAGE		没有权限访问(需要找到方法拦截.json)
+
+[ADMIN]	resource/		ROLE_LEADER				Denied PAGE		正常 没有权限访问
+[ADMIN]	resource/.json	ROLE_LEADER				{json   }		正常 没有权限访问
+
+可以看出没有权限[GUEST]和权限不足(只有ADMIN) 处理方式不一样
